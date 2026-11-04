@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="AlphaPlanet — Prototype 0.1a"
+config/name="AlphaPlanet — Prototype 0.1b"
 run/main_scene="res://scenes/main.tscn"
 
 [display]
@@ -12,3 +12,55 @@ window/stretch/mode="canvas_items"
 [rendering]
 renderer/rendering_method="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.025, 0.04, 0.065, 1)
+
+[input]
+
+move_upper_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":81)]
+}
+
+move_upper_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":69)]
+}
+
+move_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":65)]
+}
+
+move_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":68)]
+}
+
+move_lower_left={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":90)]
+}
+
+move_lower_right={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":83)]
+}
+
+wait_turn={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":32)]
+}
+
+examine={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":88)]
+}
+
+cancel_route={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":4194305)]
+}
+
+restart={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":82)]
+}

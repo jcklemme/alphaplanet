@@ -4,6 +4,9 @@ extends Node2D
 signal action_committed(origin: Vector2i, destination: Vector2i, cost: int)
 var hex := Vector2i(3, 9)
 var moving := false
+var max_health := 20
+var health := 20
+var melee_damage := 5
 
 func step(grid: HexGrid, destination: Vector2i, size: float) -> bool:
 	if moving:
@@ -13,7 +16,7 @@ func step(grid: HexGrid, destination: Vector2i, size: float) -> bool:
 		return false
 	hex = destination
 	moving = true
-	action_committed.emit(origin, destination, 1)
+	action_committed.emit(origin, destination, TurnScheduler.MOVE_COST)
 	var tween = create_tween()
 	tween.tween_property(self, "position", HexMath.to_world(hex, size), 0.12)
 	await tween.finished

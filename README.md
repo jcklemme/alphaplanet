@@ -1,4 +1,4 @@
-# AlphaPlanet — Prototype 0.1a
+# AlphaPlanet — Prototype 0.1b
 
 A Godot 4 / GDScript single-player, top-down science-fiction movement prototype. Tested with Godot 4.6.3; no external assets, plugins, or dependencies.
 
@@ -19,7 +19,7 @@ godot --path .
 
 Click an open tile to follow its shortest reachable route. Hover highlights the selected tile; teal tiles show the remaining route, gray tiles are solid, and the cyan marker is the player. The camera follows the player. Escape cancels remaining steps (an already committed step finishes). Clicking during movement replaces the remaining route from the committed destination.
 
-Keyboard: **D** east, **E** northeast, **W** northwest, **A** west, **Q** southwest, **S** southeast. Key presses during animation are ignored. There are no timers that spend actions while idle: each legal tile step consumes one action; blocked attempts consume none.
+Keyboard: **D** east, **E** northeast, **Q** northwest, **A** west, **Z** southwest, **S** southeast. Movement presses during animation cancel the remaining route without starting a second action. Space waits, X examines, and R restarts after Game Over. There are no timers that spend actions while idle: each legal tile step, melee attack, or wait consumes one action and 100 world-time units; blocked attempts and examining consume none.
 
 ## Folder structure and contracts
 
@@ -39,9 +39,11 @@ The map is a 30 × 20 axial parallelogram (600 tiles), with fixed obstacles and 
 
 ## Extension boundaries
 
-`action_committed(origin, destination, cost)` exposes the unit action cost for a future turn scheduler. A scheduler should gate route steps and resolve other actors between actions; the current prototype only counts player actions. Future enemies can share `HexGrid` occupancy and pathfinding. Map generation can populate a new logical grid without changing rendering math.
+`world/turn_scheduler.gd` owns a discrete world clock and per-actor due times and intervals. It processes due actors chronologically after each committed action; idle frames never advance it. Move, melee, and wait cost 100; examine costs zero. Costs and enemy intervals can differ without depending on animation speed. `world/hex_controls.gd` maps InputMap action names to axial offsets; bindings live in `project.godot`.
 
-Future projectiles can use Node2D world positions independently of tile identity. `HexMath.distance` supports future range checks. Line of sight should be a separate service (cube interpolation/rounding over the grid), with an explicit opacity policy separate from movement blocking. Character definitions, upgrades, and effects can later use Godot Resources without adding combat rules to grid math. LOS, projectiles, enemy AI, procedural generation, inventory, upgrades, and combat are intentionally not implemented.
+The player has 20 HP and deals 5 damage. `entities/stalker.gd` defines the Alien Stalker (7 HP, 2 damage, 100-unit interval). One spawns at reachable tile (21,12). It uses A* to approach an open tile adjacent to the player, respecting terrain and occupancy. Bumping an adjacent enemy, or clicking it, attacks without moving. Dead enemies leave occupancy and scheduling immediately. At zero player HP, actions stop and R reloads the scene. The HUD shows HP, actions, world time, and a five-message combat log.
+
+`world/game.gd` coordinates deterministic combat and delegates time ordering to the scheduler. Movement still commits logically before its visual tween; enemy actions resolve immediately against the committed position. There is no real-time enemy timer. Future projectiles can use world positions independently; hex distance remains available for range and future LOS. Inventory, upgrades, procedural generation, projectile combat, and LOS remain outside this milestone.
 
 ## Automated validation
 
@@ -51,12 +53,13 @@ Run the editor import first on a fresh checkout to populate Godot's global scrip
 godot --headless --editor --path . --quit
 godot --headless --path . --script tests/run_tests.gd
 godot --headless --path . --script tests/smoke.gd
+godot --headless --path . --script tests/combat_tests.gd
 godot --headless --path . --quit-after 60
 ```
 
-Tests exit nonzero on failure. The logic suite covers positive/negative coordinate round trips and interior rounding, pointy-top basis, unique/symmetric adjacency, hex distances, illegal and legal moves, atomic occupancy, reachable/blocked/occupied/disconnected paths, and shortest detours compared with an independent BFS. The smoke test instantiates the actual scene and checks three animated steps, action costs, occupancy, and final world position.
+Tests exit nonzero on failure. The logic suite covers positive/negative coordinate round trips and interior rounding, pointy-top basis, unique/symmetric adjacency, hex distances, illegal and legal moves, atomic occupancy, reachable/blocked/occupied/disconnected paths, and shortest detours compared with an independent BFS. Combat tests exercise physical InputMap keys, wall rejection, route cancellation including during animation, echo suppression, idle/examine/wait timing, enemy pursuit and damage, melee, death cleanup, Game Over, restart, and differing actor intervals. The smoke test instantiates the actual scene and checks three animated steps, action costs, occupancy, and final world position.
 
-Validation on Godot 4.6.3: **933 logic checks, zero failures; scene movement smoke PASS; headless editor import and 60-frame startup passed.** Interactive mouse/keyboard and visual appearance have not been manually tested. The first restricted editor invocation reported unwritable home/cache paths and denied local sockets; rerunning with writable XDG directories and local socket permission passed. In a restricted cloud shell, use writable directories:
+Validation on Godot 4.6.3: **933 grid checks and 34 control/combat checks, zero failures; scene movement smoke PASS; headless editor import and 60-frame startup passed.** Interactive mouse/keyboard and visual appearance have not been manually tested. The first restricted editor invocation reported unwritable home/cache paths and denied local sockets; rerunning with writable XDG directories and local socket permission passed. In a restricted cloud shell, use writable directories:
 
 ```sh
 mkdir -p /tmp/alphaplanet-godot/{data,config,cache}
