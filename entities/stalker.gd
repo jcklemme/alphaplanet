@@ -1,6 +1,7 @@
 class_name AlienStalker
 extends Node2D
 var hex := Vector2i(21, 12)
+var max_health := 7
 var health := 7
 var melee_damage := 2
 var action_interval := 100

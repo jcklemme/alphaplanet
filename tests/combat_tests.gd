@@ -23,7 +23,7 @@ func run() -> void:
 	var spawn: Vector2i = enemy.hex
 	await create_timer(0.2).timeout
 	check(game.scheduler.world_time == 0 and enemy.hex == spawn, "Idle time freezes world")
-	var codes = [KEY_Q, KEY_E, KEY_A, KEY_D, KEY_Z, KEY_S]
+	var codes = [KEY_Q, KEY_E, KEY_A, KEY_D, KEY_Z, KEY_X]
 	var directions = [Vector2i(0,-1), Vector2i(1,-1), Vector2i(-1,0), Vector2i(1,0), Vector2i(-1,1), Vector2i(0,1)]
 	for i in 6:
 		var before: Vector2i = game.player.hex
@@ -49,7 +49,7 @@ func run() -> void:
 	check(game.scheduler.world_time == time + 100, "Busy input cannot double turn")
 	await create_timer(0.15).timeout
 	time = game.scheduler.world_time
-	key(game, KEY_X)
+	key(game, KEY_S)
 	check(game.scheduler.world_time == time, "Examine is free")
 	key(game, KEY_SPACE)
 	check(game.scheduler.world_time == time + 100, "Wait costs 100")

@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="AlphaPlanet — Prototype 0.1b"
+config/name="AlphaPlanet — Prototype 0.1c"
 run/main_scene="res://scenes/main.tscn"
 
 [display]
@@ -42,7 +42,7 @@ move_lower_left={
 
 move_lower_right={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":83)]
+"events": [Object(InputEventKey,"physical_keycode":88)]
 }
 
 wait_turn={
@@ -52,7 +52,7 @@ wait_turn={
 
 examine={
 "deadzone": 0.5,
-"events": [Object(InputEventKey,"physical_keycode":88)]
+"events": [Object(InputEventKey,"physical_keycode":83)]
 }
 
 cancel_route={
@@ -63,4 +63,9 @@ cancel_route={
 restart={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"physical_keycode":82)]
+}
+
+fire={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":70)]
 }
