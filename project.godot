@@ -1,0 +1,14 @@
+config_version=5
+
+[application]
+config/name="AlphaPlanet — Prototype 0.1a"
+run/main_scene="res://scenes/main.tscn"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.025, 0.04, 0.065, 1)
