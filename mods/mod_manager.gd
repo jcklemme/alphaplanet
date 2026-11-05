@@ -2,6 +2,7 @@ class_name ModManager
 extends RefCounted
 ## Only fixed JSON files are read. External paths must be supplied by trusted discovery.
 var registry := ContentRegistry.new()
+var discovered: Array[Dictionary] = []
 var load_order: Array[String] = []
 
 func read_json(path: String) -> Variant:
@@ -18,9 +19,10 @@ func read_json(path: String) -> Variant:
 		return null
 	return json.data
 
-func load_content(external_directories: Array[String] = [], discover_local := true, disabled: Array[String] = []) -> ContentRegistry:
+func load_content(external_directories: Array[String] = [], discover_local := true, disabled: Array[String] = [], enabled_only: Variant = null) -> ContentRegistry:
 	registry = ContentRegistry.new()
 	load_order.clear()
+	discovered.clear()
 	var paths: Array[String] = ["res://content/base"]
 	if discover_local:
 		DirAccess.make_dir_recursive_absolute("user://mods")
@@ -47,10 +49,10 @@ func load_content(external_directories: Array[String] = [], discover_local := tr
 			continue
 		var manifest = read_json(path.path_join("mod.json"))
 		if not valid_manifest(manifest, pattern):
+			discovered.append({"path": path, "invalid": true, "manifest": {"id": "invalid", "name": path.get_file(), "version": "?", "dependencies": [], "description": "Invalid or unsupported manifest: " + path}})
 			registry.diagnostics.append("Invalid manifest: " + path)
 			continue
-		if manifest.id in disabled:
-			continue
+		discovered.append({"path": path, "manifest": manifest.duplicate(true)})
 		if manifest.id == "base" and path != "res://content/base":
 			registry.diagnostics.append("Reserved mod ID base: " + path)
 			continue
@@ -61,6 +63,9 @@ func load_content(external_directories: Array[String] = [], discover_local := tr
 			packs[manifest.id] = {"manifest": manifest, "path": path}
 	for id in duplicates:
 		packs.erase(id)
+	for id in packs.keys():
+		if id != "base" and (id in disabled or (enabled_only != null and not enabled_only.has(id))):
+			packs.erase(id)
 	while not packs.is_empty():
 		var progressed := false
 		var ids = packs.keys()

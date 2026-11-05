@@ -71,3 +71,9 @@ Item effects, ammo/reload, armor, defense rolls, critical results, body-part inj
 ## Mod-first milestone 0.1c-M
 
 See [MODDING.md](MODDING.md) for JSON weapon authoring, local installation, the Railgun development option, schemas, gameplay event contracts, architecture audit, and future Workshop/save boundaries. The gameplay and UI from Prototype 3 are retained. Additional test: `godot --headless --path . --script tests/mod_tests.gd` (22 checks).
+
+## Main menu milestone 0.1c-UI
+
+F5 now opens the main menu: New Run, Load Run (explicit unimplemented-save page), Mod Manager, Settings, Exit Game. The example Railgun is discoverable but disabled by default; enable and Apply in Mod Manager before using the development grant. Settings persist master volume and fullscreen. Esc cancels a route first, otherwise pauses; the pause screen resumes or explicitly discards the run and returns to the menu. Existing movement/attack keys are unchanged.
+
+New modules: `app/mod_configuration.gd`, `app/settings_manager.gd`, `app/run_manager.gd`, `ui/main_menu.gd`, `ui/pause_menu.gd`, `scenes/menu.tscn`. Additional tests: `tests/menu_tests.gd` and `tests/exit_test.gd`. See MODDING.md for configuration behavior and the manual desktop checklist.

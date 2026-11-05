@@ -1,5 +1,6 @@
 extends Node2D
 var mods := ModManager.new()
+var pause_menu := PauseMenu.new()
 var content: ContentRegistry
 var hooks := GameplayEvents.new()
 var grid := HexGrid.new()
@@ -21,7 +22,10 @@ var inspected_hex := Vector2i.ZERO
 var has_inspection := false
 
 func _ready() -> void:
-	content = mods.load_content()
+	var configuration = ModConfiguration.new()
+	configuration.read()
+	content = configuration.build(configuration.enabled)
+	add_child(pause_menu)
 	if not content.contains("base:stalker") or not content.contains("base:pistol_weapon"):
 		push_error("Required base content unavailable: " + str(content.diagnostics))
 		set_process(false)
@@ -141,9 +145,17 @@ func _process(_delta: float) -> void:
 		hud.show_inspection(HexInspection.describe(grid, inspected_hex))
 
 func _unhandled_input(event: InputEvent) -> void:
+	if get_tree().paused:
+		return
 	if hud.modal_active:
 		return
 	if event is InputEventKey and event.echo:
+		return
+	if event.is_action_pressed("cancel_route"):
+		if not route.is_empty():
+			route.clear()
+		else:
+			pause_menu.open()
 		return
 	if game_over:
 		if event.is_action_pressed("restart"):
@@ -154,9 +166,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			route.clear() # Also cancel during an already committed animated step.
 			attempt_step(player.hex + HexControls.MOVES[action])
 			return
-	if event.is_action_pressed("cancel_route"):
-		route.clear()
-	elif event.is_action_pressed("wait_turn"):
+	if event.is_action_pressed("wait_turn"):
 		route.clear()
 		if not player.moving and not shot_busy:
 			log_event("You wait.")
