@@ -4,6 +4,7 @@ extends Node2D
 signal action_committed(origin: Vector2i, destination: Vector2i, cost: int)
 var hex := Vector2i(3, 9)
 var moving := false
+var state := CharacterState.new()
 var max_health := 20
 var health := 20
 var melee_damage := 5

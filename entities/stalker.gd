@@ -1,5 +1,7 @@
 class_name AlienStalker
 extends Node2D
+var anatomy = CharacterState.new().anatomy
+var combat_skill := 10
 var hex := Vector2i(21, 12)
 var max_health := 7
 var health := 7

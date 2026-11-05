@@ -4,6 +4,7 @@ extends RefCounted
 var width: int
 var height: int
 var blocked: Dictionary = {}
+var remains: Dictionary = {}
 var occupants: Dictionary = {}
 
 func _init(columns: int = 30, rows: int = 20) -> void:

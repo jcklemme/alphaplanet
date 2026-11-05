@@ -11,4 +11,4 @@ static func describe(grid: HexGrid, hex: Vector2i) -> String:
 		return "%s\nPlayer • HP %d/%d" % [heading, actor.health, actor.max_health]
 	if grid.blocked.has(hex):
 		return heading + "\nWall • Impassable"
-	return heading + "\nFloor • Traversable" + (" • Occupied" if actor != null else " • Accessible")
+	return heading + ("\nAlien Stalker remains (dead)" if grid.remains.has(hex) else "") + "\nFloor • Traversable" + (" • Occupied" if actor != null else " • Accessible")

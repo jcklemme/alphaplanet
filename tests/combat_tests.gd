@@ -17,6 +17,7 @@ func key(game: Node, code: int, echo := false) -> void:
 func run() -> void:
 	var game = load("res://scenes/main.tscn").instantiate()
 	root.add_child(game)
+	game.die = func(): return 2
 	await process_frame
 	var origin: Vector2i = game.player.hex
 	var enemy = game.enemies[0]
@@ -68,6 +69,7 @@ func run() -> void:
 	game.free()
 	game = load("res://scenes/main.tscn").instantiate()
 	root.add_child(game)
+	game.die = func(): return 2
 	enemy = game.enemies[0]
 	game.grid.occupants.erase(enemy.hex)
 	enemy.hex = game.player.hex + Vector2i(1,0)

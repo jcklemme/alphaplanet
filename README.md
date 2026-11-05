@@ -1,53 +1,54 @@
-# AlphaPlanet — Prototype 0.1c
+# AlphaPlanet — Prototype 3
 
-A Godot 4 / GDScript single-player, top-down science-fiction movement prototype. Tested with Godot 4.6.3; no external assets, plugins, or dependencies.
+Godot 4 / GDScript turn-based hex roguelite prototype. Tested with Godot 4.6.3. No external dependencies or assets.
 
 ## Launch
 
-Import `project.godot` in the Godot 4 project manager, open the project, and press **F6** with `scenes/main.tscn` open or **F5** to run the project. From a terminal:
+Download or clone this branch, import `project.godot` into Godot 4, and press **F5**. Alternatively, from the project directory:
 
 ```sh
-cd /path/to/alphaplanet
 godot --editor --path .
-# Or run directly:
+# Run directly:
 godot --path .
 ```
 
-`.godot/` contains generated editor data and is ignored by Git. Keep `.gd.uid` files alongside their scripts in version control.
+## Controls and layout
 
-## Controls
+Controls are unchanged: **Q/E** upper diagonals, **A/D** horizontal, **Z/X** lower diagonals; **S** examines the hovered tile, **F** fires at a hovered enemy, **Space** waits, **Esc** cancels navigation, **R** restarts after Game Over. Click an open tile to follow an A* route; bump or click an adjacent enemy to attack in melee. Each step rechecks occupancy. Invalid actions are free.
 
-Click an open tile to follow its shortest reachable route. Hover highlights the selected tile; teal tiles show the remaining route, gray tiles are solid, and the cyan marker is the player. The camera follows the player. Escape cancels remaining steps (an already committed step finishes). Clicking during movement replaces the remaining route from the committed destination.
+The map occupies a dedicated viewport to the left of a 280-pixel sidebar and above a 180-pixel event log (dimensions adapt for smaller windows). Camera-aware mouse conversion uses the map viewport's transform. UI panels do not cover the map. Scroll the item list and log independently. The log follows new entries while at the bottom; scrolling up preserves review position. It retains the latest 300 categorized messages.
 
-Keyboard: **D** east, **E** northeast, **Q** northwest, **A** west, **Z** southwest, **X** southeast. Movement presses during animation cancel the remaining route without starting a second action. Space waits, S examines the mouse-hovered tile, F fires the energy pistol, and R restarts after Game Over. There are no timers that spend actions while idle: each legal tile step, melee attack, or wait consumes one action and 100 world-time units; blocked attempts and examining consume none.
+Click **Inventory** to open the item window; click its item rows to pin/unpin, then Close or the window close button. Opening it cancels navigation and blocks gameplay keyboard input. Quick-access rows select items. Pinned items appear first; quantity, equipped, and selected markers derive from shared character state. Group buttons **1**, **2**, **3** select Plasma Pistol, Combat Knife, and Unarmed respectively at no time cost. These are mouse buttons, not new keyboard bindings. F requires the pistol group; melee remains available in all groups with the existing five damage. Selecting a quick-access item does not equip it or consume it.
 
-## Folder structure and contracts
+## Combat
+
+All attacks use an independent 3d6 roll-under check: total <= base skill + modifiers. Player ranged skill is 12, melee 11, Stalker combat 10. Effective skill is never clamped; there are no automatic or critical outcomes or defense rolls. The result includes individual dice, total, base skill, named modifiers, effective skill, success, and signed margin. Production rolls are random; tests inject dice callables.
+
+Successful melee hits deal 5, pistol hits 3, and Stalker hits 2. Misses deal zero but still spend the valid attack's time. Movement, melee and wait cost 100; pistol attacks cost 120. Pistol range remains five hexes with deterministic wall-blocked LOS. Invalid targeting and examination cost zero. There is no time advancement while thinking or during visual animations. Dead enemies leave occupancy and the scheduler immediately; nonblocking remains can be examined.
+
+## Major modules
 
 | Path | Responsibility |
 | --- | --- |
-| `world/hex_math.gd` | Pointy-top axial `(q,r)` math, cube rounding, six neighbors, hex distance, world conversion |
-| `world/hex_grid.gd` | Bounds, solid terrain, actor occupancy, atomic legal movement |
-| `world/hex_pathfinder.gd` | Uniform-cost hex A*, with distance heuristic; no rendering dependencies |
-| `world/game.gd` | Scene coordination, input, route execution, static map, action count |
-| `entities/player.gd` | Player coordinate and visual animation; emits action cost on successful movement |
-| `rendering/hex_board.gd` | Placeholder polygons, hover and route presentation; tile size lives here |
-| `ui/hud.gd` | Controls and status overlay |
-| `scenes/main.tscn` | Runnable scene entry point |
-| `tests/` | Standalone logical regression tests and scene movement smoke test |
+| `world/game.gd` | Input and gameplay coordination, attack checks, shared damage/death handling |
+| `world/hex_math.gd`, `hex_grid.gd`, `hex_pathfinder.gd` | Axial math, terrain/occupancy/remains, A* |
+| `world/hex_sight.gd`, `ranged_targeting.gd` | Symmetric deterministic LOS and target validation |
+| `world/hex_inspection.gd` | Live tile/entity/remains descriptions |
+| `world/skill_check.gd` | Injectable 3d6 checks and complete result records |
+| `world/turn_scheduler.gd` | Discrete chronological scheduling with per-actor intervals |
+| `world/event_log.gd` | Bounded categorized event stream, independent of UI |
+| `data/character_state.gd` | Stable item IDs, skills, selection, pins, loadouts, appearance and extensible anatomy |
+| `entities/` | Player/Stalker HP and movement presentation |
+| `ui/hud.gd` | Permanent viewport/sidebar/log layout and inventory modal |
+| `ui/portrait.gd` | Placeholder portrait driven by appearance data |
+| `rendering/` | Hex polygons and visual-only shot beam |
+| `tests/` | Grid, movement, combat, ranged, UI/state and rules regression suites |
 
-The map is a 30 × 20 axial parallelogram (600 tiles), with fixed obstacles and a gap. Coordinates are logical tile identities, never pixel positions. A* paths exclude the origin and include the goal; an empty path means no steps are required or no valid route exists. Occupied goals cannot be targeted for movement. Each step revalidates the route against current occupancy. Logical occupancy changes before its 0.12-second visual tween; no second movement starts until the animation completes. Click targeting uses the camera-aware world mouse position.
+Anatomy is a list of independent part records: ID, condition, injuries, armor coverage, replacement, mutations, and impairment. Initial definitions contain six humanoid parts but accept extra/missing parts. Appearance separates body-part references, equipment and visual layers. Neither is a second damage system. HP remains the sole active injury mechanic. No save format is promised.
 
-## Extension boundaries
+## Validation
 
-`world/turn_scheduler.gd` owns a discrete world clock and per-actor due times and intervals. It processes due actors chronologically after each committed action; idle frames never advance it. Move, melee, and wait cost 100; examine costs zero. Costs and enemy intervals can differ without depending on animation speed. `world/hex_controls.gd` maps InputMap action names to axial offsets; bindings live in `project.godot`.
-
-The player has 20 HP and deals 5 damage. `entities/stalker.gd` defines the Alien Stalker (7 HP, 2 damage, 100-unit interval). One spawns at reachable tile (21,12). It uses A* to approach an open tile adjacent to the player, respecting terrain and occupancy. Bumping an adjacent enemy, or clicking it, attacks without moving. Dead enemies leave occupancy and scheduling immediately. At zero player HP, actions stop and R reloads the scene. The HUD shows HP, actions, world time, and a five-message combat log.
-
-`world/game.gd` coordinates deterministic combat and delegates time ordering to the scheduler. Movement still commits logically before its visual tween; enemy actions resolve immediately against the committed position. There is no real-time enemy timer. Future projectiles can use world positions independently; hex distance remains available for range and future LOS. Inventory, upgrades, procedural generation, inventory and upgrades remain outside this milestone.
-
-## Automated validation
-
-Run the editor import first on a fresh checkout to populate Godot's global script class cache:
+On a fresh checkout, import first to populate global class metadata:
 
 ```sh
 godot --headless --editor --path . --quit
@@ -55,31 +56,14 @@ godot --headless --path . --script tests/run_tests.gd
 godot --headless --path . --script tests/smoke.gd
 godot --headless --path . --script tests/combat_tests.gd
 godot --headless --path . --script tests/ranged_tests.gd
+godot --headless --path . --script tests/prototype3_tests.gd
 godot --headless --path . --quit-after 60
 ```
 
-Tests exit nonzero on failure. The logic suite covers positive/negative coordinate round trips and interior rounding, pointy-top basis, unique/symmetric adjacency, hex distances, illegal and legal moves, atomic occupancy, reachable/blocked/occupied/disconnected paths, and shortest detours compared with an independent BFS. Combat tests exercise physical InputMap keys, wall rejection, route cancellation including during animation, echo suppression, idle/examine/wait timing, enemy pursuit and damage, melee, death cleanup, Game Over, restart, and differing actor intervals. The smoke test instantiates the actual scene and checks three animated steps, action costs, occupancy, and final world position.
+Results: 933 grid checks, 34 combat checks, 24 ranged/inspection checks, 520 Prototype 3 checks, and scene movement smoke passed. Legacy damage regressions inject successful dice; new tests explicitly exercise misses, successful single damage application, modifiers, equality and unclamped skills. UI tests cover inventory blocking, pin ordering, loadouts, bounded events, and targeting after resizing. Headless startup and editor validation also run. Manual visual and scrolling UX validation remains outstanding.
 
-Validation on Godot 4.6.3: **933 grid checks, 34 control/combat checks, and 24 ranged/inspection checks, zero failures; scene movement smoke PASS; headless editor import and 60-frame startup passed.** Interactive mouse/keyboard and visual appearance have not been manually tested. The first restricted editor invocation reported unwritable home/cache paths and denied local sockets; rerunning with writable XDG directories and local socket permission passed. In a restricted cloud shell, use writable directories:
+In restricted cloud shells use writable XDG directories under `/tmp/alphaplanet-godot/{data,config,cache}`. Editor validation needs permission for local editor sockets. An initial redundant SubViewport size assignment produced a warning; removing it lets the stretching container own viewport sizing.
 
-```sh
-mkdir -p /tmp/alphaplanet-godot/{data,config,cache}
-export XDG_DATA_HOME=/tmp/alphaplanet-godot/data
-export XDG_CONFIG_HOME=/tmp/alphaplanet-godot/config
-export XDG_CACHE_HOME=/tmp/alphaplanet-godot/cache
-```
+## Deferred features
 
-## Milestone 0.1c
-
-The Basic Energy Pistol deals 3 damage at range 5 for 120 time units. F targets the living enemy at the mouse position, with no facing requirement. Invalid targets spend no actions or time. Shots cancel routes and suppress further actions during a brief visual-only beam; the turn scheduler resolves damage and due enemies immediately. Melee and ranged attacks share `damage_enemy` and death cleanup.
-
-S examines current terrain or occupants at the mouse position, cancels automatic navigation, and spends no time. The inspection panel follows the selected tile's live contents. The stale Stalker report in 0.1b was a hardcoded Examine message, not failed occupancy cleanup. Mouse positions are captured from viewport events and transformed through the camera to world coordinates. UI-covered positions are ignored.
-
-New modules:
-- `world/hex_inspection.gd`: live occupancy and terrain descriptions.
-- `world/hex_sight.gd`: deterministic cube-interpolated LOS with canonical endpoint order and fixed tie-breaking nudge. At exact boundary ties, one consistent side is selected; reversing the ray selects the same cells. Walls in those cells block shots; entities do not block shots.
-- `world/ranged_targeting.gd`: living-target, range, and LOS validation, plus pistol constants.
-- `rendering/shot_beam.gd`: short fading world-space beam; no combat or time advancement.
-- `tests/ranged_tests.gd`: targeting, LOS, inspection, death, timing, mouse conversion and click navigation regressions.
-
-Godot 4.6.3 headless tests and startup passed. The initial headless cursor-warp test could not move the platform pointer; event-based input handling/tests resolved that limitation. Manual visual testing remains outstanding.
+Item effects, ammo/reload, armor, defense rolls, critical results, body-part injuries, full modular character sprites, mutation/cybernetic gameplay, procedural generation, and save compatibility are not implemented. Energy is a labeled placeholder. The inventory provides selection/pinning and sample equipment groups only. Art remains simple shapes.

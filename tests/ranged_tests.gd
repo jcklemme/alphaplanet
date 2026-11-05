@@ -21,6 +21,7 @@ func key(game: Node, code: int) -> void:
 func run() -> void:
 	var game = load("res://scenes/main.tscn").instantiate()
 	root.add_child(game)
+	game.die = func(): return 2
 	await process_frame
 	var enemy = game.enemies[0]
 	var origin: Vector2i = game.player.hex
@@ -30,7 +31,7 @@ func run() -> void:
 	# Camera-aware mouse position away from the HUD.
 	var mouse_world = HexMath.to_world(origin + Vector2i(1,1), HexBoard.SIZE)
 	var motion = InputEventMouseMotion.new()
-	motion.position = game.get_global_transform_with_canvas() * mouse_world
+	motion.position = game.board.get_global_transform_with_canvas() * mouse_world
 	root.push_input(motion, true)
 	game._input(motion)
 	await process_frame
@@ -68,12 +69,12 @@ func run() -> void:
 	game.inspected_hex = target
 	check(game.fire_at(target), "Lethal shot succeeds")
 	check(game.enemies.is_empty() and not game.grid.occupants.has(target) and game.scheduler.due.is_empty(), "Ranged kill removes living entity/occupancy/schedule")
-	check(game.hud.inspection.text.contains("Floor") and not game.hud.inspection.text.contains("Stalker"), "Dead inspection refreshed immediately")
+	check(game.hud.inspection.text.contains("Floor") and game.hud.inspection.text.contains("remains"), "Dead inspection refreshed immediately")
 	await create_timer(0.2).timeout
 	check(not game.fire_at(target) and game.scheduler.world_time == 240, "Former enemy tile is not a target")
 	# Mouse click route and hover are still camera-aware.
 	mouse_world = HexMath.to_world(origin + Vector2i(1,1), HexBoard.SIZE)
-	motion.position = game.get_global_transform_with_canvas() * mouse_world
+	motion.position = game.board.get_global_transform_with_canvas() * mouse_world
 	root.push_input(motion, true)
 	game._input(motion)
 	await process_frame

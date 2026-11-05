@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="AlphaPlanet — Prototype 0.1c"
+config/name="AlphaPlanet — Prototype 3"
 run/main_scene="res://scenes/main.tscn"
 
 [display]
