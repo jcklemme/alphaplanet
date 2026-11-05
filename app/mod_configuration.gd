@@ -1,7 +1,8 @@
 class_name ModConfiguration
 extends RefCounted
 var path := "user://enabled_mods.json"
-var sources: Array[String] = ["res://examples/railgun"]
+var sources: Array[String] = []
+var local_root := "user://mods"
 var enabled: Array[String] = []
 var discovered: Array[Dictionary] = []
 var diagnostics: Array[String] = []
@@ -25,12 +26,14 @@ func read() -> void:
 
 func refresh() -> void:
 	var manager = ModManager.new()
+	manager.local_root = local_root
 	manager.load_content(sources)
 	discovered = manager.discovered
 	diagnostics = manager.registry.diagnostics.duplicate()
 
 func build(ids: Array[String]) -> ContentRegistry:
 	var manager = ModManager.new()
+	manager.local_root = local_root
 	var result = manager.load_content(sources, true, [], ids)
 	for id in ids:
 		if not manager.load_order.has(id):

@@ -1,4 +1,5 @@
 extends Node2D
+var configuration_override: ModConfiguration
 var mods := ModManager.new()
 var pause_menu := PauseMenu.new()
 var content: ContentRegistry
@@ -22,19 +23,21 @@ var inspected_hex := Vector2i.ZERO
 var has_inspection := false
 
 func _ready() -> void:
-	var configuration = ModConfiguration.new()
+	var configuration = configuration_override if configuration_override != null else ModConfiguration.new()
 	configuration.read()
 	content = configuration.build(configuration.enabled)
-	add_child(pause_menu)
 	if not content.contains("base:stalker") or not content.contains("base:pistol_weapon"):
 		push_error("Required base content unavailable: " + str(content.diagnostics))
 		set_process(false)
 		return
 	player.state = CharacterState.new(content)
+	pause_menu.state = player.state
+	pause_menu.registry = content
+	add_child(pause_menu)
 	player.melee_damage = int(content.get_definition("base:knife_weapon").damage)
 	# Explicit developer option: -- --dev-item=namespace:item, never auto-grant mod items.
 	for argument in OS.get_cmdline_user_args():
-		if argument.begins_with("--dev-item="):
+		if DevelopmentTools.available() and argument.begins_with("--dev-item="):
 			if not player.state.grant_development_item(argument.trim_prefix("--dev-item=")):
 				content.diagnostics.append("Requested development item is missing: " + argument)
 

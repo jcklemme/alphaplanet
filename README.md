@@ -77,3 +77,10 @@ See [MODDING.md](MODDING.md) for JSON weapon authoring, local installation, the 
 F5 now opens the main menu: New Run, Load Run (explicit unimplemented-save page), Mod Manager, Settings, Exit Game. The example Railgun is discoverable but disabled by default; enable and Apply in Mod Manager before using the development grant. Settings persist master volume and fullscreen. Esc cancels a route first, otherwise pauses; the pause screen resumes or explicitly discards the run and returns to the menu. Existing movement/attack keys are unchanged.
 
 New modules: `app/mod_configuration.gd`, `app/settings_manager.gd`, `app/run_manager.gd`, `ui/main_menu.gd`, `ui/pause_menu.gd`, `scenes/menu.tscn`. Additional tests: `tests/menu_tests.gd` and `tests/exit_test.gd`. See MODDING.md for configuration behavior and the manual desktop checklist.
+
+
+## Local-mod installation and Development Tools hotfix
+
+Mod Manager now identifies actual sources and paths. **Install Example Mod** copies the Railgun template into writable `user://mods` without overwriting existing files. Bundled templates are no longer automatically loaded. Refresh preserves pending selections. Enable and Apply the installed mod, start a run, then **Esc → Development Tools → Grant Item** (debug builds only). Select the new equipment group after resuming. See MODDING.md for step-by-step instructions and limitations.
+
+Additional test: `godot --headless --path . --script tests/local_install_tests.gd` (20 checks). The hotfix ran 1,553 checks plus movement smoke; Settings/fullscreen tests were intentionally excluded. Settings controls and fullscreen implementation are unchanged.

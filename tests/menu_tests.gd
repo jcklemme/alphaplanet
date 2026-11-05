@@ -21,12 +21,15 @@ func run() -> void:
 	check(ProjectSettings.get_setting("application/run/main_scene") == "res://scenes/menu.tscn", "Startup scene")
 	var configuration = ModConfiguration.new()
 	configuration.path = "user://test_enabled_mods.json"
+	configuration.local_root = "user://menu_sample_mods"
+	ExampleInstaller.install(configuration.local_root)
 	configuration.refresh()
 	check(configuration.discovered.any(func(entry): return entry.manifest.id == "example_railgun"), "Railgun discovered through loader")
 	check(configuration.enabled.is_empty(), "Optional mods default disabled")
 	check(configuration.apply(["example_railgun"]), "Enable applies")
 	var reopened = ModConfiguration.new()
 	reopened.path = configuration.path
+	reopened.local_root = configuration.local_root
 	reopened.read()
 	check(reopened.enabled == ["example_railgun"], "Enable persists")
 	check(reopened.build(reopened.enabled).contains("example_railgun:weapon"), "Enabled registry contains railgun")

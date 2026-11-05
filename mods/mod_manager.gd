@@ -1,6 +1,7 @@
 class_name ModManager
 extends RefCounted
 ## Only fixed JSON files are read. External paths must be supplied by trusted discovery.
+var local_root := "user://mods"
 var registry := ContentRegistry.new()
 var discovered: Array[Dictionary] = []
 var load_order: Array[String] = []
@@ -25,14 +26,14 @@ func load_content(external_directories: Array[String] = [], discover_local := tr
 	discovered.clear()
 	var paths: Array[String] = ["res://content/base"]
 	if discover_local:
-		DirAccess.make_dir_recursive_absolute("user://mods")
-		var directory = DirAccess.open("user://mods")
+		DirAccess.make_dir_recursive_absolute(local_root)
+		var directory = DirAccess.open(local_root)
 		if directory == null:
 			registry.diagnostics.append("Cannot access user://mods")
 		else:
 			for child in directory.get_directories():
 				if not directory.is_link(child):
-					paths.append("user://mods/" + child)
+					paths.append(local_root.path_join(child))
 	paths.append_array(external_directories)
 	paths.sort()
 	var packs: Dictionary = {}
@@ -52,7 +53,7 @@ func load_content(external_directories: Array[String] = [], discover_local := tr
 			discovered.append({"path": path, "invalid": true, "manifest": {"id": "invalid", "name": path.get_file(), "version": "?", "dependencies": [], "description": "Invalid or unsupported manifest: " + path}})
 			registry.diagnostics.append("Invalid manifest: " + path)
 			continue
-		discovered.append({"path": path, "manifest": manifest.duplicate(true)})
+		discovered.append({"path": path, "source": "Base Game" if path == "res://content/base" else ("Local Mod" if path.begins_with(local_root + "/") else "External Directory"), "manifest": manifest.duplicate(true)})
 		if manifest.id == "base" and path != "res://content/base":
 			registry.diagnostics.append("Reserved mod ID base: " + path)
 			continue

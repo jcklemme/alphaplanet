@@ -2,6 +2,9 @@ class_name PauseMenu
 extends CanvasLayer
 signal resumed
 var panel: PanelContainer
+var state: CharacterState
+var registry: ContentRegistry
+var tools_panel: DevelopmentTools
 func _ready() -> void:
 	layer = 20
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -22,11 +25,28 @@ func _ready() -> void:
 	leave.text = "Discard Run and Return to Main Menu"
 	leave.pressed.connect(func(): RunManager.end(get_tree()))
 	column.add_child(leave)
+	if DevelopmentTools.available():
+		var tools_button = Button.new()
+		tools_button.text = "Development Tools"
+		tools_button.pressed.connect(open_tools)
+		column.add_child(tools_button)
 	hide()
+func open_tools() -> void:
+	if not DevelopmentTools.available():
+		return
+	if tools_panel == null:
+		tools_panel = DevelopmentTools.new()
+		tools_panel.state = state
+		tools_panel.registry = registry
+		tools_panel.position = Vector2(280, 220)
+		add_child(tools_panel)
+	tools_panel.show()
 func open() -> void:
 	show()
 	get_tree().paused = true
 func close() -> void:
+	if tools_panel != null:
+		tools_panel.hide()
 	get_tree().paused = false
 	hide()
 	resumed.emit()

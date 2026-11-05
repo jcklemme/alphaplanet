@@ -81,9 +81,11 @@ func show_settings() -> void:
 	toggle.toggled.connect(func(value): settings.fullscreen = value; feedback.text = "Saved" if settings.save() == OK else "Could not save settings")
 	button(column, "Back", show_home)
 func show_mods() -> void:
+	var preserve_pending = page == "mods"
 	page = "mods"
 	configuration.refresh()
-	desired = configuration.enabled.duplicate()
+	if not preserve_pending:
+		desired = configuration.enabled.duplicate()
 	clear("Local Mod Manager")
 	var row = HBoxContainer.new()
 	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -111,10 +113,12 @@ func show_mods() -> void:
 			if value and not desired.has(manifest.id): desired.append(manifest.id)
 			elif not value: desired.erase(manifest.id)
 			status.text = "Pending changes. Apply validates dependencies before saving.")
-		button(item, manifest.name + " " + manifest.version + (" [ERROR]" if entry.get("invalid", false) else "") + "\n" + manifest.get("author", "Unknown author") + " • Dependencies: " + str(manifest.dependencies) + "\n" + manifest.get("description", ""), func(): show_details(manifest))
+		button(item, manifest.name + " " + manifest.version + " • " + entry.get("source", "Invalid Local Mod") + (" [ERROR]" if entry.get("invalid", false) else "") + "\n" + manifest.get("author", "Unknown author") + " • Dependencies: " + str(manifest.dependencies) + "\n" + manifest.get("description", ""), func(): show_details(manifest))
 	status = label(column, "\n".join(configuration.diagnostics) if not configuration.diagnostics.is_empty() else "Base is required. New optional mods default to disabled.")
 	button(column, "Apply Changes", apply_mods)
-	button(column, "Refresh Mods (discard pending changes)", show_mods)
+	button(column, "Refresh Mods (keep pending changes)", show_mods)
+	label(column, "Bundled Example template: res://examples/railgun (not active content)")
+	button(column, "Install Example Mod", install_example)
 	button(column, "Open Mods Folder", open_folder)
 	button(column, "Back", show_home)
 func show_details(manifest: Dictionary) -> void:
@@ -122,14 +126,23 @@ func show_details(manifest: Dictionary) -> void:
 	var active := false
 	for entry in trial.enabled:
 		if entry.id == manifest.id: active = true
-	details.text = "%s\nID: %s\nVersion: %s\nAuthor: %s\n%s\nDependencies: %s\nDesired: %s\nValidation: %s\n%s" % [manifest.name, manifest.id, manifest.version, manifest.get("author", "—"), manifest.get("description", ""), str(manifest.dependencies), "enabled" if manifest.id == "base" or desired.has(manifest.id) else "disabled", "loaded" if active else "disabled or failed", "\n".join(configuration.diagnostics + trial.diagnostics)]
+	var source_text = ""
+	for entry in configuration.discovered:
+		if entry.manifest.id == manifest.id:
+			source_text += "\nSource: " + entry.get("source", "Invalid Local Mod") + "\nPath: " + ProjectSettings.globalize_path(entry.path)
+	details.text = "%s\nID: %s\nVersion: %s\nAuthor: %s\n%s\nDependencies: %s\nDesired: %s\nValidation: %s\n%s" % [manifest.name, manifest.id, manifest.version, manifest.get("author", "—"), manifest.get("description", ""), str(manifest.dependencies), "enabled" if manifest.id == "base" or desired.has(manifest.id) else "disabled", "loaded" if active else "disabled or failed", "\n".join(configuration.diagnostics + trial.diagnostics)] + source_text
 func apply_mods() -> void:
 	if configuration.apply(desired):
 		status.text = "Applied and saved. The next New Run uses this configuration." + ("\n" + "\n".join(configuration.diagnostics) if not configuration.diagnostics.is_empty() else "")
 	else:
 		status.text = "Not applied. Resolve dependencies/errors:\n" + "\n".join(configuration.diagnostics)
 func open_folder() -> void:
-	var error = DirAccess.make_dir_recursive_absolute("user://mods")
+	var error = DirAccess.make_dir_recursive_absolute(configuration.local_root)
 	if error == OK:
-		error = OS.shell_open(ProjectSettings.globalize_path("user://mods"))
-	status.text = "Mods folder opened." if error == OK else "Could not open folder: " + ProjectSettings.globalize_path("user://mods")
+		error = OS.shell_open(ProjectSettings.globalize_path(configuration.local_root))
+	status.text = "Mods folder opened." if error == OK else "Could not open folder: " + ProjectSettings.globalize_path(configuration.local_root)
+
+func install_example() -> void:
+	var result = ExampleInstaller.install(configuration.local_root)
+	show_mods()
+	status.text = result

@@ -3,8 +3,8 @@
 Mods contain **JSON data, not code**. No Steam installation is needed. The normal game retains its existing UI, controls and 3d6 rules.
 
 1. Open the project in Godot. Use **Project → Open User Data Folder**, then create a folder called `mods` if needed.
-2. Copy the entire `examples/railgun` folder from this repository into that `mods` folder. It must contain `mod.json` and `content.json` directly, not inside another nested folder.
-3. Restart the game. Load diagnostics appear in the event log. A valid Railgun mod is now registered, but does not change your normal starting equipment.
+2. Use Mod Manager → Install Example Mod, or copy the entire `examples/railgun` folder into that `mods` folder (not both). It must contain `mod.json` and `content.json` directly, not inside another nested folder.
+3. Restart the game. Load diagnostics appear in the event log. Enable the Railgun and Apply Changes in Mod Manager. It does not change normal starting equipment.
 4. For a development playtest, run from the project directory:
 
    ```sh
@@ -66,14 +66,37 @@ No save system exists yet. `registry.snapshot_metadata()` supplies `{schema_vers
 
 Run `godot --headless --editor --path . --quit` first, then `godot --headless --path . --script tests/mod_tests.gd`. Existing test commands remain in README. Mod tests exercise external-directory discovery, data-only Railgun firing, disabling/removal, immutable lookup copies, validation, duplicate rejection, missing dependencies, invalid JSON, deterministic order, event payloads and missing-content policy. Tests create isolated fixtures under `user://mod_tests`, never the real mods directory.
 
-## Main menu and enabled-mod configuration (0.1c-UI)
+## Main menu and local installation hotfix
 
-The application now starts at the main menu. Choose **Mod Manager**, select optional mods, then **Apply Changes**. New optional mods default to **disabled**. Base is always enabled. Apply rebuilds the actual registry, validates that every requested mod loaded, and saves `user://enabled_mods.json` only on success. Failed combinations leave the previous saved selection intact. Select all required dependencies together; disabling a dependency requires disabling its dependents too. Cycles, duplicates and malformed content are reported. Refresh rescans and discards unsaved selections; Back also discards pending changes. No content is hot-reloaded into a run.
+The example used to load directly from `res://examples/railgun`, so the writable Mods folder could be empty despite the Railgun appearing in the list. That bundled folder is now only an installation template, not active content.
 
-The packaged `examples/railgun` directory is now supplied as an external discovery source through the same ModManager API used for local folders. It appears in the list without copying files. **Do not also install a second copy with the same ID in user://mods**; duplicate IDs are rejected. Enable it and Apply before starting a run with `--dev-item=example_railgun:railgun`. Other mods still belong in `user://mods`; Open Mods Folder creates and opens that directory. Diagnostics include invalid folders even when no valid manifest is available. Removed enabled mods produce a diagnostic on the next run, while valid base content still starts. Reapply a corrected selection to remove stale IDs from the saved configuration.
+### Install and use the example without programming
 
-`app/mod_configuration.gd` owns desired/persisted configuration and transactional registry construction. Its `sources` list accepts trusted external directories, including future Workshop installation locations. `app/run_manager.gd` owns scene transitions; gameplay initializes its enabled registry before adding entities to the world. `app/settings_manager.gd` stores audio/display categories in `user://settings.cfg`. Fullscreen uses the desktop DisplayServer API and is intentionally not applied by a headless driver.
+1. Start the game and open **Mod Manager**.
+2. Click **Install Example Mod**. It copies `mod.json` and `content.json` into `user://mods/experimental_railgun`. Existing destination folders are never overwritten. If an earlier manual installation exists elsewhere under Mods, remove one duplicate copy yourself after checking your changes.
+3. Click **Open Mods Folder** to see the actual files. This is the same writable directory scanned by the loader. Its operating-system path is shown in details, and Godot resolves it for both editor and exported applications.
+4. Tick Experimental Railgun and click **Apply Changes**. The selection persists in `user://enabled_mods.json`. Refresh preserves pending selections; it does not apply them. Missing dependencies or invalid content prevent Apply from saving that combination.
+5. Start **New Run**, press **Esc** when no movement route is active, and choose **Development Tools**.
+6. Select Experimental Railgun by its item or weapon ID, click **Grant Item**, then return to Pause and Resume. The sidebar updates immediately; select the new equipment group (normally 4) to equip it. Repeated grants increase quantity rather than adding duplicate groups.
+7. Hover an enemy within nine hexes with clear LOS and press F. The combat log shows a 3d6 check against skill 10. A success deals 12 damage; a miss deals none. Either valid attack costs 180 time units. A miss is not a loading failure.
+8. Return to the menu, disable the mod, Apply, and start a new run. It will be absent from Development Tools and the active registry; the base Plasma Pistol remains available.
 
-Esc cancels a nonempty movement route first, otherwise opens Pause. Esc/Resume closes Pause; all simulation and gameplay input are suspended. **Discard Run and Return to Main Menu** explicitly ends the current unsaved run. Load Run is an honest placeholder: saving/loading is not implemented.
+Development Tools and the older `--dev-item=namespace:item` option are gated by `OS.is_debug_build()`. Use the editor or a debug export for testing. A release export has neither accessible grants nor the pause-menu tool button. The tool lists actual registered items and weapons, stable IDs and their source namespaces; diagnostics show weapon counts, enabled mod IDs, and registry errors. Granting never advances time.
 
-Manual desktop checklist (not covered by headless visual validation): verify button hover/focus, open the real mods folder, enable the sample and relaunch to confirm its checkbox, use the development grant and fire it, test fullscreen/windowed switching, verify audio bus volume when audio is available, inspect long mod metadata and diagnostics, and test Esc/Resume/Discard navigation. Automated tests cover menu navigation, preference/config persistence, dependency rejection, registry contents, pause input, clean Exit invocation and existing gameplay.
+### Sources, files, and errors
+
+**Base Game** is packaged in `res://content/base` and required. **Bundled Example** is the installable template, clearly labeled in the menu. **Local Mod** means a folder under `user://mods`; the details show its real path. Additional trusted discovery directories use the label **External Directory**. Steam Workshop is reserved for a future adapter and is not integrated.
+
+The installer stages the two required JSON files and renames the completed folder into place. It refuses to overwrite any existing destination or abandoned staging directory. User files are never silently replaced. The installed example loads independently of the bundled template.
+
+To create your own weapon, copy an installed mod folder, give the manifest a unique ID, update its content ID prefixes, and edit the weapon numbers in `content.json` with a text editor. Keep `base:ranged` and declare dependency `base`. Use the schemas and examples above for valid punctuation and fields. Refresh, enable, Apply, then use Development Tools to grant your registered content. Do not reuse another installed mod's ID.
+
+Malformed files, unsupported API versions, duplicate IDs, missing dependencies, cycles and registration errors appear in Mod Manager diagnostics. Failed Apply preserves the previous selection. Removed enabled mods produce a diagnostic, while valid base content remains playable. No hot-reloading occurs inside a run.
+
+### Exports and manual checks
+
+`export_presets.cfg` includes base/template/schema JSON in the Linux export resource filters; other desktop presets must retain those JSON filters. No source path is written by the installer. Runtime installation always uses writable `user://mods`.
+
+Automated `tests/local_install_tests.gd` installs into an isolated writable user folder, verifies no overwrite, real discovery, selection persistence, pause tools, item grants, data-defined Railgun hits/misses, duplicate handling and safe removal. Existing gameplay and loader tests remain available. Settings/fullscreen tests were intentionally not run for this hotfix.
+
+Manual checks: click Install and Open Mods Folder on your desktop; inspect the two JSON files; enable/apply and reopen the app; grant via Pause → Development Tools; equip and fire; disable and start a fresh run. Check that release exports hide Development Tools. Native folder opening and standalone executable behavior require desktop testing; automated resource packaging does not establish those behaviors. Fullscreen is already confirmed and is outside this hotfix.

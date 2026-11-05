@@ -62,6 +62,11 @@ func active_ranged_weapon() -> Dictionary:
 func grant_development_item(content_id: String) -> bool:
 	if not registry.contains(content_id) or registry.get_definition(content_id).kind != "items":
 		return false
+	for instance_id in items:
+		if items[instance_id].content_id == content_id:
+			items[instance_id].quantity += 1
+			changed.emit()
+			return true
 	items[content_id] = {"content_id": content_id, "quantity": 1}
 	groups.append({"id": str(groups.size()+1), "equipped": [content_id]})
 	changed.emit()
