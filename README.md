@@ -67,3 +67,7 @@ In restricted cloud shells use writable XDG directories under `/tmp/alphaplanet-
 ## Deferred features
 
 Item effects, ammo/reload, armor, defense rolls, critical results, body-part injuries, full modular character sprites, mutation/cybernetic gameplay, procedural generation, and save compatibility are not implemented. Energy is a labeled placeholder. The inventory provides selection/pinning and sample equipment groups only. Art remains simple shapes.
+
+## Mod-first milestone 0.1c-M
+
+See [MODDING.md](MODDING.md) for JSON weapon authoring, local installation, the Railgun development option, schemas, gameplay event contracts, architecture audit, and future Workshop/save boundaries. The gameplay and UI from Prototype 3 are retained. Additional test: `godot --headless --path . --script tests/mod_tests.gd` (22 checks).

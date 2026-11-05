@@ -1,0 +1,209 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlphaPlanet content schema 1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "definitions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "definitions": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "starting_quantity"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "kind": {
+                "const": "items"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "starting_quantity": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "damage",
+              "range",
+              "action_cost",
+              "item",
+              "skill"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "kind": {
+                "const": "weapons"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "damage": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "range": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "action_cost": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "item": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "skill": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "skill_override": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "health",
+              "damage",
+              "interval",
+              "combat_skill"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "kind": {
+                "const": "enemies"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "health": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "damage": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "interval": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "combat_skill": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "base_value"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "kind": {
+                "const": "skills"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "base_value": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "kind": {
+                "const": "status_effects"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "name"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"
+              },
+              "kind": {
+                "const": "upgrades"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

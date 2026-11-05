@@ -1,0 +1,11 @@
+{
+  "id": "example_railgun",
+  "name": "Experimental Railgun",
+  "version": "1.0.0",
+  "api_version": 1,
+  "dependencies": [
+    "base"
+  ],
+  "description": "Development sample weapon",
+  "author": "AlphaPlanet"
+}

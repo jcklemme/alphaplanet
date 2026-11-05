@@ -116,7 +116,7 @@ func refresh_items() -> void:
 	for i in state.groups.size():
 		button(group_column, ("● " if i == state.active_group else "") + state.groups[i].id, func(): state.activate(i))
 	for id in state.ordered_items():
-		var item = state.items[id]
+		var item = state.item_view(id)
 		var text = ("★ " if state.pinned.has(id) else "◇ ") + item.name + " ×" + str(item.quantity)
 		if state.equipped().has(id):
 			text += " [Equipped]"

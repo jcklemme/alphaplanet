@@ -1,4 +1,7 @@
 extends Node2D
+var mods := ModManager.new()
+var content: ContentRegistry
+var hooks := GameplayEvents.new()
 var grid := HexGrid.new()
 var board := HexBoard.new()
 var player := HexPlayer.new()
@@ -18,6 +21,19 @@ var inspected_hex := Vector2i.ZERO
 var has_inspection := false
 
 func _ready() -> void:
+	content = mods.load_content()
+	if not content.contains("base:stalker") or not content.contains("base:pistol_weapon"):
+		push_error("Required base content unavailable: " + str(content.diagnostics))
+		set_process(false)
+		return
+	player.state = CharacterState.new(content)
+	player.melee_damage = int(content.get_definition("base:knife_weapon").damage)
+	# Explicit developer option: -- --dev-item=namespace:item, never auto-grant mod items.
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--dev-item="):
+			if not player.state.grant_development_item(argument.trim_prefix("--dev-item=")):
+				content.diagnostics.append("Requested development item is missing: " + argument)
+
 	for r in range(3, 17):
 		if r != 9:
 			grid.blocked[Vector2i(12, r)] = true
@@ -36,27 +52,35 @@ func _ready() -> void:
 	player.action_committed.connect(_on_action)
 	player.add_child(Camera2D.new())
 	var stalker = AlienStalker.new()
+	stalker.configure(content)
 	assert(not HexPathfinder.find_path(grid, player.hex, stalker.hex).is_empty())
 	assert(grid.place(stalker, stalker.hex))
 	enemies.append(stalker)
 	world.add_child(stalker)
 	stalker.position = HexMath.to_world(stalker.hex, HexBoard.SIZE)
 	scheduler.register(stalker, stalker.action_interval)
+	for diagnostic in content.diagnostics:
+		log_event(diagnostic)
 	log_event("An Alien Stalker is approaching. S examines; Space waits.")
 
 func log_event(text: String, category := "System") -> void:
 	event_log.append(text, category)
 
-func attack_check(skill: int, description: String) -> bool:
+func attack_check(skill: int, description: String, attacker := "player", target := "stalker") -> bool:
 	var result = SkillCheck.roll(skill, {}, die)
+	hooks.publish("on_attack", {"attacker": attacker, "target": target, "result": result})
+	if result.success:
+		hooks.publish("on_hit", {"attacker": attacker, "target": target, "result": result})
 	log_event("%s: %s = %d vs skill %d — %s by %d" % [description, str(result.dice), result.total, result.effective_skill, "Success" if result.success else "Failure", abs(result.margin)], "Combat")
 	return result.success
 
 func _on_action(_origin: Vector2i, _destination: Vector2i, cost: int) -> void:
 	log_event("You move to (%d, %d)." % [_destination.x, _destination.y], "Movement")
+	hooks.publish("on_move", {"actor": "player", "origin": _origin, "destination": _destination})
 	commit_action(cost)
 
 func commit_action(cost: int) -> void:
+	hooks.publish("on_turn_start", {"actor": "player", "time": scheduler.world_time, "cost": cost})
 	if cost > 0:
 		actions += 1
 	scheduler.advance(cost, enemy_turn, func(): return game_over)
@@ -68,7 +92,7 @@ func attempt_step(target: Vector2i) -> bool:
 	if occupant is AlienStalker and occupant.health > 0:
 		if attack_check(player.state.skills.melee, "You attack Stalker in melee"):
 			damage_enemy(occupant, player.melee_damage, "You hit Stalker")
-		commit_action(TurnScheduler.MELEE_COST)
+		commit_action(int(content.get_definition("base:knife_weapon").action_cost))
 		return true
 	if not grid.can_move(player, player.hex, target):
 		log_event("Movement blocked.")
@@ -79,12 +103,15 @@ func attempt_step(target: Vector2i) -> bool:
 func enemy_turn(enemy: AlienStalker) -> void:
 	if enemy.health <= 0 or game_over:
 		return
+	hooks.publish("on_turn_start", {"actor": "stalker", "time": scheduler.world_time})
 	if HexMath.distance(enemy.hex, player.hex) == 1:
-		if not attack_check(enemy.combat_skill, "Stalker attacks"):
+		if not attack_check(enemy.combat_skill, "Stalker attacks", "stalker", "player"):
 			return
 		player.health = maxi(0, player.health - enemy.melee_damage)
+		hooks.publish("on_damage_taken", {"actor": "player", "damage": enemy.melee_damage, "health": player.health})
 		log_event("Stalker hits you for %d." % enemy.melee_damage)
 		if player.health == 0:
+			hooks.publish("on_kill", {"actor": "player", "killer": "stalker"})
 			game_over = true
 			route.clear()
 			log_event("GAME OVER — Press R to restart.")
@@ -95,9 +122,11 @@ func enemy_turn(enemy: AlienStalker) -> void:
 		var path = HexPathfinder.find_path(grid, enemy.hex, goal)
 		if not path.is_empty() and (best.is_empty() or path.size() < best.size()):
 			best = path
+	var previous_hex = enemy.hex
 	if not best.is_empty() and grid.move(enemy, enemy.hex, best[0]):
 		enemy.hex = best[0]
 		enemy.position = HexMath.to_world(enemy.hex, HexBoard.SIZE)
+		hooks.publish("on_move", {"actor": "stalker", "origin": previous_hex, "destination": enemy.hex})
 
 func _process(_delta: float) -> void:
 	board.hover = hovered_hex()
@@ -164,12 +193,14 @@ func damage_enemy(enemy: AlienStalker, damage: int, description: String) -> void
 	if enemy.health <= 0:
 		return
 	enemy.health = maxi(0, enemy.health - damage)
+	hooks.publish("on_damage_taken", {"actor": "stalker", "damage": damage, "health": enemy.health})
 	log_event("%s for %d." % [description, damage], "Damage")
 	if enemy.health == 0:
 		grid.remains[enemy.hex] = "Alien Stalker"
 		grid.occupants.erase(enemy.hex)
 		scheduler.unregister(enemy)
 		enemies.erase(enemy)
+		hooks.publish("on_kill", {"actor": "stalker", "killer": "player", "content_id": enemy.content_id})
 		enemy.queue_free()
 		log_event("Stalker defeated.")
 	if has_inspection:
@@ -179,10 +210,11 @@ func fire_at(target: Vector2i) -> bool:
 	route.clear()
 	if game_over or player.moving or shot_busy:
 		return false
-	if not player.state.equipped().has("pistol"):
+	var weapon = player.state.active_ranged_weapon()
+	if weapon.is_empty():
 		log_event("Equip the Plasma Pistol group to fire.", "Items")
 		return false
-	var reason = RangedTargeting.rejection(grid, player.hex, target)
+	var reason = RangedTargeting.rejection(grid, player.hex, target, int(weapon.range))
 	if not reason.is_empty():
 		log_event(reason)
 		return false
@@ -191,9 +223,9 @@ func fire_at(target: Vector2i) -> bool:
 	beam.position = player.position
 	beam.destination = HexMath.to_world(target, HexBoard.SIZE) - beam.position
 	world.add_child(beam)
-	if attack_check(player.state.skills[player.state.items.pistol.skill], "You fire the Plasma Pistol"):
-		damage_enemy(grid.occupants[target], RangedTargeting.DAMAGE, "Plasma Pistol hits Stalker")
-	commit_action(RangedTargeting.COST)
+	if attack_check(int(weapon.get("skill_override", player.state.skills.ranged)), "You fire the " + weapon.name):
+		damage_enemy(grid.occupants[target], int(weapon.damage), weapon.name + " hits Stalker")
+	commit_action(int(weapon.action_cost))
 	get_tree().create_timer(0.18).timeout.connect(func(): shot_busy = false)
 	return true
 

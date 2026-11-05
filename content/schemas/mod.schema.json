@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlphaPlanet mod manifest API 1",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "version",
+    "api_version",
+    "dependencies"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "api_version": {
+      "const": 1
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]*$"
+      }
+    },
+    "description": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    }
+  }
+}

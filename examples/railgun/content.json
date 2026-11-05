@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "example_railgun:railgun",
+      "kind": "items",
+      "name": "Experimental Railgun",
+      "starting_quantity": 0
+    },
+    {
+      "id": "example_railgun:weapon",
+      "kind": "weapons",
+      "name": "Experimental Railgun",
+      "item": "example_railgun:railgun",
+      "skill": "base:ranged",
+      "damage": 12,
+      "range": 9,
+      "action_cost": 180,
+      "skill_override": 10
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "definitions": [
+    {
+      "id": "base:pistol",
+      "kind": "items",
+      "name": "Plasma Pistol",
+      "starting_quantity": 1
+    },
+    {
+      "id": "base:knife",
+      "kind": "items",
+      "name": "Combat Knife",
+      "starting_quantity": 1
+    },
+    {
+      "id": "base:med",
+      "kind": "items",
+      "name": "Med Injector",
+      "starting_quantity": 2
+    },
+    {
+      "id": "base:frag",
+      "kind": "items",
+      "name": "Frag Grenade",
+      "starting_quantity": 1
+    },
+    {
+      "id": "base:stim",
+      "kind": "items",
+      "name": "Stim Pack",
+      "starting_quantity": 3
+    },
+    {
+      "id": "base:pistol_weapon",
+      "kind": "weapons",
+      "name": "Plasma Pistol",
+      "item": "base:pistol",
+      "skill": "base:ranged",
+      "damage": 3,
+      "range": 5,
+      "action_cost": 120
+    },
+    {
+      "id": "base:knife_weapon",
+      "kind": "weapons",
+      "name": "Combat Knife",
+      "item": "base:knife",
+      "skill": "base:melee",
+      "damage": 5,
+      "range": 1,
+      "action_cost": 100
+    },
+    {
+      "id": "base:ranged",
+      "kind": "skills",
+      "name": "Ranged",
+      "base_value": 12
+    },
+    {
+      "id": "base:melee",
+      "kind": "skills",
+      "name": "Melee",
+      "base_value": 11
+    },
+    {
+      "id": "base:stalker",
+      "kind": "enemies",
+      "name": "Alien Stalker",
+      "health": 7,
+      "damage": 2,
+      "interval": 100,
+      "combat_skill": 10
+    }
+  ]
+}
